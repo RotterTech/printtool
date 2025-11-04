@@ -1,0 +1,19 @@
+﻿{
+  "name": "print-service",
+  "version": "1.0.0",
+  "description": "Express print service for label printing",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "canvas": "^2.11.2",
+    "qrcode": "^1.5.3",
+    "bwip-js": "^4.2.2"
+  },
+  "optionalDependencies": {
+    "@thiagoelg/node-printer": "^0.6.2"
+  }
+}
