@@ -183,6 +183,143 @@ app.post('/print', async (req, res) => {
   }
 });
 
+// Print part label endpoint
+app.post('/print-part', async (req, res) => {
+  console.log('\n=== POST /print-part received ===');
+  
+  try {
+    const { text, jobId } = req.body;
+    
+    if (!text) {
+      return res.status(400).json({
+        success: false,
+        message: 'Text is required'
+      });
+    }
+    
+    console.log('📥 Incoming part label data:', { text, jobId });
+    
+    console.log('🎨 Creating canvas (600x200)...');
+    const canvas = createCanvas(600, 200);
+    const ctx = canvas.getContext('2d');
+    
+    console.log('🖌️ Setting background to white...');
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, 600, 200);
+    
+    console.log('✏️ Drawing part label text...');
+    ctx.fillStyle = '#000000';
+    ctx.font = 'bold 24px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // Center the text
+    ctx.fillText(text, 300, 80);
+    console.log('✅ Part label text drawn');
+    
+    // Add QR code and barcode if jobId is provided
+    if (jobId) {
+      console.log('📱 Generating QR code...');
+      try {
+        const qrDataURL = await QRCode.toDataURL(jobId, { width: 50, margin: 1 });
+        const qrImage = await loadImage(qrDataURL);
+        ctx.drawImage(qrImage, 500, 10, 50, 50);
+        console.log('✅ QR code generated and drawn at top-right');
+      } catch (err) {
+        console.error('❌ QR code generation error:', err);
+      }
+      
+      console.log('📊 Generating barcode...');
+      try {
+        const barcodePNG = bwipjs.toBuffer({
+          bcid: 'code128',
+          text: jobId,
+          scale: 2,
+          height: 40,
+          includetext: false
+        });
+        const barcodeImage = await loadImage(barcodePNG);
+        const barcodeWidth = barcodeImage.width;
+        const xPos = (600 - barcodeWidth) / 2;
+        ctx.drawImage(barcodeImage, xPos, 130, barcodeWidth, 40);
+        console.log(`✅ Barcode generated and drawn at bottom-center (width: ${barcodeWidth})`);
+      } catch (err) {
+        console.error('❌ Barcode generation error:', err);
+      }
+    }
+    
+    console.log('💾 Converting canvas to PNG buffer...');
+    const buffer = canvas.toBuffer('image/png');
+    console.log(`✅ Part label rendered (buffer ${buffer.length} bytes)`);
+    
+    // Save debug PNG file
+    const debugPath = 'debug_part_label.png';
+    fs.writeFileSync(debugPath, buffer);
+    console.log(`💾 DEBUG: Saved part label to ${debugPath} for inspection`);
+    
+    // Get available printers
+    console.log('🖨️ Checking available printers...');
+    const availablePrinters = printer.getPrinters();
+    console.log('📋 Available printers:', availablePrinters);
+    
+    // Try to match printer name or use first available
+    let printerName = "NPI4790D0 (HP Color LaserJet MFP M181fw)";
+    const printerMatch = availablePrinters.find(p => p.includes('HP') || p.includes('Brother'));
+    
+    if (printerMatch) {
+      printerName = printerMatch;
+      console.log(`🎯 Using matched printer: ${printerName}`);
+    } else if (availablePrinters.length > 0) {
+      printerName = availablePrinters[0];
+      console.log(`⚠️ Using first available printer: ${printerName}`);
+    } else {
+      console.warn(`⚠️ No printers found, using configured name: ${printerName}`);
+    }
+    
+    console.log(`🖨️ Sending print job to: ${printerName}`);
+    console.log(`📦 Buffer size: ${buffer.length} bytes`);
+    console.log(`📝 Type: RAW`);
+    
+    try {
+      printer.printDirect({
+        data: buffer,
+        printer: printerName,
+        type: 'RAW',
+        success: () => {
+          console.log(`✅ Part label print success`);
+          res.json({
+            success: true,
+            message: 'Part label printed',
+            text
+          });
+        },
+        error: (err) => {
+          console.error(`❌ Print error: ${err.message || err}`);
+          res.json({
+            success: false,
+            message: err.message || 'Print failed'
+          });
+        }
+      });
+    } catch (syncError) {
+      console.error(`❌ Synchronous print error: ${syncError.message}`);
+      res.status(500).json({
+        success: false,
+        message: 'Synchronous print error',
+        error: syncError.message
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Error processing part label print request:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error processing part label print request',
+      error: error.message
+    });
+  }
+});
+
 // Start the server
 app.listen(PORT, () => {
   console.log(`Print service running on http://localhost:${PORT}`);

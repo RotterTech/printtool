@@ -6,6 +6,13 @@ export async function proxy(request: NextRequest) {
   const publicRoutes = ['/login', '/signup'];
   const isPublicRoute = publicRoutes.includes(request.nextUrl.pathname);
 
+  // Bypass authentication entirely when running on localhost (development convenience)
+  const host = request.headers.get('host') || '';
+  const isLocalhost = host.startsWith('localhost') || host.startsWith('127.0.0.1');
+  if (isLocalhost) {
+    return NextResponse.next();
+  }
+
   // Check if Supabase env vars are available
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

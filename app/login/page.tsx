@@ -15,12 +15,12 @@ export default function LoginPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
-  // Redirect if already logged in
+  // ✅ Redirect if already logged in (maar niet tijdens loginactie)
   useEffect(() => {
-    if (!authLoading && user) {
+    if (!authLoading && user && !loading) {
       router.push("/");
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, loading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,40 +34,28 @@ export default function LoginPage() {
         password,
       });
 
-      if (error) {
-        setError(error.message);
-        setLoading(false);
-        return;
-      }
+      if (error) throw error;
 
-      // Login successful - verify session is available
+      // Wacht even tot Supabase de sessie opslaat
+      await new Promise((res) => setTimeout(res, 800));
+
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (session && session.user) {
         setSuccess("Succesvol ingelogd! Je wordt doorgestuurd...");
-        setLoading(false);
-        
-        // Immediately redirect to home page
-        router.push("/");
+        setTimeout(() => {
+          router.push("/");
+        }, 400); // kleine vertraging zodat state kan syncen
       } else {
-        // Session not immediately available, wait a moment and retry
-        setTimeout(async () => {
-          const { data: { session: retrySession } } = await supabase.auth.getSession();
-          if (retrySession && retrySession.user) {
-            setSuccess("Succesvol ingelogd! Je wordt doorgestuurd...");
-            setLoading(false);
-            router.push("/");
-          } else {
-            setError("Inloggen geslaagd, maar sessie kon niet worden opgehaald. Probeer de pagina te vernieuwen.");
-            setLoading(false);
-          }
-        }, 500);
+        throw new Error("Sessie niet beschikbaar na login.");
       }
-    } catch (err) {
-      setError("Er ging iets mis. Probeer het opnieuw.");
+    } catch (err: any) {
+      setError(err.message || "Er ging iets mis. Probeer het opnieuw.");
+    } finally {
       setLoading(false);
     }
   };
+
 
   if (authLoading) {
     return (
