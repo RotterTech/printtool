@@ -1,0 +1,18 @@
+{
+  "name": "ddk-print-agent",
+  "version": "1.0.0",
+  "description": "De Digitale Klusjesman - Print Agent voor USB labelprinters",
+  "type": "module",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js"
+  },
+  "dependencies": {
+    "canvas": "^2.11.2",
+    "qrcode": "^1.5.3",
+    "bwip-js": "^4.2.2"
+  },
+  "optionalDependencies": {
+    "@thiagoelg/node-printer": "^0.6.2"
+  }
+}
