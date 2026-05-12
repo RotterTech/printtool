@@ -1,9 +1,20 @@
 import { NextResponse } from 'next/server';
+import { createClient } from "@supabase/supabase-js";
+import { logActivity } from "@/utils/logger";
+import { requireAuth } from "@/lib/apiAuth";
 
 export const dynamic = 'force-dynamic';
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
 export async function POST(request: Request) {
   try {
+    const { error: authError, user } = await requireAuth();
+    if (authError) return authError;
+
     const body = await request.json();
     
     // Log the payload to server console
@@ -29,6 +40,16 @@ export async function POST(request: Request) {
       
       const result = await response.json();
       console.log('✅ Print forwarded successfully:', result);
+
+      // Log the activity
+      await logActivity(
+        supabase,
+        "PRINT",
+        "REPAIR_LABEL",
+        jobId || "unknown",
+        `Reparatie label geprint voor #${jobId}`,
+        user?.id
+      );
       
       return NextResponse.json(result);
       

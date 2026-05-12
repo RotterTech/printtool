@@ -1,37 +1,42 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import { SupabaseAuthProvider } from '@/lib/SupabaseAuthProvider';
+import LayoutShell from "@/components/layout/LayoutShell";
+import GlobalScanner from "@/components/GlobalScanner";
+import { SupabaseAuthProvider } from "@/lib/SupabaseAuthProvider";
 
+const inter = Inter({ subsets: ["latin"] });
 
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#0f172a",
+};
 
 export const metadata: Metadata = {
-  title: "Printtool",
-  description: "Printtool voor het printen van labels",
+  title: "De Digitale Klusjesman",
+  description: "Reparatie Dashboard",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "DDK",
+  },
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <html lang="nl">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={inter.className}>
         <SupabaseAuthProvider>
-          {children}
+          <GlobalScanner />
+          <LayoutShell>
+            {children}
+          </LayoutShell>
         </SupabaseAuthProvider>
       </body>
     </html>

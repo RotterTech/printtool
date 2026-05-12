@@ -1,81 +1,52 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
-import { useAuth } from "@/lib/SupabaseAuthProvider";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
-
-  // ✅ Redirect if already logged in (maar niet tijdens loginactie)
-  useEffect(() => {
-    if (!authLoading && user && !loading) {
-      router.push("/");
-    }
-  }, [user, authLoading, loading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    setSuccess("");
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
 
-      // Wacht even tot Supabase de sessie opslaat
-      await new Promise((res) => setTimeout(res, 800));
-
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session && session.user) {
-        setSuccess("Succesvol ingelogd! Je wordt doorgestuurd...");
-        setTimeout(() => {
-          router.push("/");
-        }, 400); // kleine vertraging zodat state kan syncen
-      } else {
-        throw new Error("Sessie niet beschikbaar na login.");
-      }
+      // Hard redirect so middleware picks up the new session cookies
+      window.location.href = "/";
     } catch (err: any) {
       setError(err.message || "Er ging iets mis. Probeer het opnieuw.");
-    } finally {
       setLoading(false);
     }
   };
 
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-gray-600">Laden...</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-        <h1 className="text-3xl font-bold mb-2 text-center text-gray-900">
-          Inloggen
-        </h1>
-        <p className="text-gray-600 text-center mb-8">
-          Log in op je account om verder te gaan
-        </p>
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            De Digitale Klusjesman
+          </h1>
+          <p className="text-gray-600 text-sm">
+            Log in op je account om verder te gaan
+          </p>
+        </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleLogin} className="space-y-6" suppressHydrationWarning>
           <div>
             <label 
               htmlFor="email" 
@@ -90,7 +61,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="jouw@email.nl"
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#1b796d] focus:border-[#1b796d] outline-none transition-all"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
             />
           </div>
 
@@ -108,7 +79,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="••••••••"
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#1b796d] focus:border-[#1b796d] outline-none transition-all"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
             />
           </div>
 
@@ -118,16 +89,10 @@ export default function LoginPage() {
             </div>
           )}
 
-          {success && (
-            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
-              {success}
-            </div>
-          )}
-
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#1b796d] hover:bg-[#16645b] text-white font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Bezig met inloggen..." : "Inloggen"}
           </button>
@@ -138,7 +103,7 @@ export default function LoginPage() {
             Nog geen account?{" "}
             <Link 
               href="/signup" 
-              className="text-[#1b796d] hover:text-[#16645b] font-medium"
+              className="text-blue-600 hover:text-blue-700 font-medium"
             >
               → Maak er een aan
             </Link>

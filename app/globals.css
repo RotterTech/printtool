@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ====== Force text selection in form fields ====== */
+input,
+textarea,
+[contenteditable="true"] {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+  -webkit-touch-callout: default !important;
+}
+
 /* ====== Global styles ====== */
 html, body {
   height: 100%;
@@ -13,6 +24,15 @@ html, body {
 /* Smooth animation for button hovers */
 button {
   transition: all 0.2s ease-in-out;
+}
+
+/* Hide scrollbar for horizontal scroll tabs */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 
@@ -136,5 +156,36 @@ button {
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+  }
+}
+
+/* ====== Print Styles - Fix Blank Pages ====== */
+@media print {
+  /* Only reset margins for the label printer */
+  @page {
+    margin: 0;
+    size: auto;
+  }
+
+  /* Ensure background colors print */
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Standard utility to hide elements */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Receipt print area - used by RepairReceiptPrinter */
+  .receipt-print-area {
+    display: block !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 80mm;
+    z-index: 9999;
+    background: white;
   }
 }

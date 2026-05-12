@@ -1,5 +1,4 @@
 'use client';
-
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabaseClient';
 
@@ -17,21 +16,55 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     let mounted = true;
 
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    const init = async () => {
+      // Probeer eerst session te refreshen
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.warn('Session error, attempting refresh:', error.message);
+        // Probeer te refreshen als er een error is
+        const { data: refreshData } = await supabase.auth.refreshSession();
+        if (mounted) {
+          setUser(refreshData?.session?.user ?? null);
+          setLoading(false);
+        }
+        return;
+      }
+      
       if (mounted) {
         setUser(session?.user ?? null);
         setLoading(false);
       }
-    })();
+    };
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+    init();
+
+    const { data: subscription } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event);
+      
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed successfully');
+      }
+      
+      if (event === 'SIGNED_OUT') {
+        console.log('User signed out');
+      }
+      
       setUser(session?.user ?? null);
     });
+
+    // Refresh session elke 10 minuten om uitloggen te voorkomen
+    const refreshInterval = setInterval(async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await supabase.auth.refreshSession();
+      }
+    }, 10 * 60 * 1000); // 10 minuten
 
     return () => {
       mounted = false;
       subscription.subscription.unsubscribe();
+      clearInterval(refreshInterval);
     };
   }, []);
 
